@@ -1,20 +1,16 @@
 import React, { memo, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../../shared/theme';
-import { AppText } from '../../../shared/components/AppText';
-import { Badge } from '../../../shared/components/Badge';
-import { ScoreIndicator } from '../../../shared/components/ScoreIndicator';
-import { Card } from '../../../shared/components/Card';
-import { AssessmentResult } from '../types/assessment';
-import { ms } from '../../../shared/utils/scale';
+import { AppText, Badge, ScoreIndicator, Card, useTheme, ms } from '@/shared';
+import type { AssessmentResult } from '@/features/assessments/types';
 
 interface AssessmentCardProps {
   item: AssessmentResult;
+  onEvaluate?: (id: string) => void;
 }
 
-export const AssessmentCard: React.FC<AssessmentCardProps> = memo(({ item }) => {
-  const { colors, spacing, radius } = useTheme();
+export const AssessmentCard: React.FC<AssessmentCardProps> = memo(({ item, onEvaluate }) => {
+  const { colors, radius } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isCompleted = item.status === 'Completed';
@@ -23,78 +19,115 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = memo(({ item }) => 
 
   return (
     <Card variant="elevated" elevation="sm" style={styles.card}>
-      {/* Top Meta Header: Type Badge & Status/Grade Tag */}
       <View style={styles.headerRow}>
         <View style={styles.badgeGroup}>
           <Badge
+            label={item.assessmentType.toUpperCase()}
             variant={item.assessmentType === 'Recorded' ? 'recorded' : 'text'}
             size="sm"
           />
-          {isCompleted && hasScore && (
+
+          {isCompleted && (
             <Badge
+              label={isGood ? 'GOOD' : 'NEEDS IMPROVEMENT'}
               variant={isGood ? 'good' : 'needsImprovement'}
               size="sm"
+              style={{ marginLeft: ms(6) }}
             />
           )}
+
           {!isCompleted && (
-            <Badge variant="pending" size="sm" />
+            <Badge
+              label="PENDING EVALUATION"
+              variant="pending"
+              size="sm"
+              style={{ marginLeft: ms(6) }}
+            />
           )}
         </View>
 
         {item.duration && (
           <View style={styles.durationRow}>
             <Ionicons
-              name={item.assessmentType === 'Recorded' ? 'timer-outline' : 'reader-outline'}
+              name={item.assessmentType === 'Recorded' ? 'time-outline' : 'document-text-outline'}
               size={ms(12)}
               color={colors.textMuted}
             />
-            <AppText variant="captionMuted" style={{ marginLeft: ms(3) }}>
+            <AppText variant="captionMuted" style={{ marginLeft: ms(4) }}>
               {item.duration}
             </AppText>
           </View>
         )}
       </View>
 
-      {/* Question Prompt */}
-      <View style={styles.questionSection}>
-        <AppText variant="captionMuted" style={styles.questionLabel}>
-          QUESTION
-        </AppText>
-        <AppText variant="h3" style={styles.questionText}>
-          {item.question}
-        </AppText>
-      </View>
+      <AppText variant="h3" style={styles.question}>
+        {item.question}
+      </AppText>
 
-      {/* Score and Evaluation Status */}
-      <View style={[styles.scoreSection, { borderColor: colors.divider }]}>
-        <View>
-          <AppText variant="captionMuted">EVALUATION SCORE</AppText>
-          <ScoreIndicator score={item.score} status={item.status} />
+      {isCompleted && hasScore && (
+        <View style={[styles.scoreSection, { borderColor: colors.cardBorder }]}>
+          <ScoreIndicator score={item.score!} status={item.status} />
+          {item.submittedAt && (
+            <AppText variant="captionMuted">{item.submittedAt}</AppText>
+          )}
         </View>
+      )}
 
-        {isCompleted && hasScore && (
-          <View style={styles.gradeResult}>
-            <AppText
-              variant="bodyBold"
-              style={{
-                color: isGood ? colors.good : colors.needsImprovement,
-                fontSize: ms(13),
-              }}
-            >
-              {isGood ? 'Strong Performance' : 'Needs Work'}
-            </AppText>
-            <AppText variant="captionMuted">
-              {isGood ? 'Above 70 threshold' : 'Below 70 threshold'}
-            </AppText>
-          </View>
-        )}
-      </View>
-
-      {/* AI Feedback Section */}
-      {isCompleted && item.feedback ? (
+      {isCompleted && item.feedback && (
         <View
           style={[
             styles.feedbackContainer,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderRadius: radius.md,
+            },
+          ]}
+        >
+          <View style={styles.feedbackHeader}>
+            <Ionicons name="sparkles" size={ms(13)} color={colors.primary} />
+            <AppText
+              variant="caption"
+              weight="700"
+              color={colors.primary}
+              style={{ marginLeft: ms(4), letterSpacing: 0.5 }}
+            >
+              AI COACH
+            </AppText>
+          </View>
+
+          <AppText
+            variant="body"
+            color={colors.textSecondary}
+            numberOfLines={isExpanded ? undefined : 2}
+            style={styles.feedbackText}
+          >
+            {item.feedback}
+          </AppText>
+
+          {item.feedback.length > 90 && (
+            <TouchableOpacity
+              onPress={() => setIsExpanded(!isExpanded)}
+              style={styles.expandToggle}
+              activeOpacity={0.7}
+            >
+              <AppText variant="caption" weight="600" color={colors.primary}>
+                {isExpanded ? 'Show less' : 'Read full coaching note'}
+              </AppText>
+              <Ionicons
+                name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                size={ms(12)}
+                color={colors.primary}
+                style={{ marginLeft: ms(2) }}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {!isCompleted && (
+        <View
+          style={[
+            styles.pendingBox,
             {
               backgroundColor: colors.surfaceElevated,
               borderColor: colors.cardBorder,
@@ -102,54 +135,35 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = memo(({ item }) => 
             },
           ]}
         >
-          <View style={styles.feedbackHeader}>
-            <View style={styles.aiLabelRow}>
-              <Ionicons name="sparkles" size={ms(14)} color={colors.primary} />
-              <AppText
-                variant="tag"
-                color={colors.primary}
-                style={{ marginLeft: ms(4), letterSpacing: 0.5 }}
-              >
-                AI COACH FEEDBACK
+          <View style={styles.pendingInfoRow}>
+            <Ionicons name="hourglass-outline" size={ms(16)} color={colors.pending} />
+            <View style={{ marginLeft: ms(8), flex: 1 }}>
+              <AppText variant="bodyBold" color={colors.text}>
+                Awaiting Evaluation
+              </AppText>
+              <AppText variant="captionMuted">
+                {item.assessmentType === 'Recorded'
+                  ? 'Vani AI Coach will analyze vocal tone, pacing, and executive clarity.'
+                  : 'Vani AI Coach will review structure, professional grammar, and impact.'}
               </AppText>
             </View>
           </View>
 
-          <AppText
-            variant="body"
-            color={colors.textSecondary}
-            numberOfLines={isExpanded ? undefined : 3}
-            style={styles.feedbackText}
-          >
-            {item.feedback}
-          </AppText>
-
-          {item.feedback.length > 100 && (
+          {onEvaluate && (
             <TouchableOpacity
-              onPress={() => setIsExpanded((prev) => !prev)}
-              activeOpacity={0.7}
-              style={styles.expandButton}
+              onPress={() => onEvaluate(item.id)}
+              style={[
+                styles.evaluateBtn,
+                { backgroundColor: colors.primary, borderRadius: radius.sm },
+              ]}
+              activeOpacity={0.8}
             >
-              <AppText variant="caption" color={colors.primary} weight="600">
-                {isExpanded ? 'Show less' : 'Read full feedback'}
+              <Ionicons name="sparkles" size={ms(12)} color="#FFFFFF" style={{ marginRight: ms(4) }} />
+              <AppText variant="caption" weight="700" color="#FFFFFF">
+                Evaluate Now (Instant AI)
               </AppText>
-              <Ionicons
-                name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                size={ms(13)}
-                color={colors.primary}
-                style={{ marginLeft: ms(2) }}
-              />
             </TouchableOpacity>
           )}
-        </View>
-      ) : null}
-
-      {/* Footer Timestamp */}
-      {item.submittedAt && (
-        <View style={styles.footerRow}>
-          <AppText variant="captionMuted">
-            Submitted: {item.submittedAt}
-          </AppText>
         </View>
       )}
     </Card>
@@ -158,72 +172,64 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = memo(({ item }) => 
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: ms(14),
+    marginBottom: ms(12),
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: ms(10),
+    marginBottom: ms(8),
   },
   badgeGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: ms(6),
   },
   durationRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  questionSection: {
-    marginBottom: ms(12),
-  },
-  questionLabel: {
-    marginBottom: ms(2),
-    letterSpacing: 0.5,
-  },
-  questionText: {
-    letterSpacing: -0.2,
+  question: {
+    marginBottom: ms(10),
   },
   scoreSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: ms(10),
     borderTopWidth: 1,
-    borderBottomWidth: 1,
-    marginBottom: ms(12),
-  },
-  gradeResult: {
-    alignItems: 'flex-end',
+    paddingTop: ms(10),
+    marginBottom: ms(10),
   },
   feedbackContainer: {
     padding: ms(12),
-    borderWidth: 1,
-    marginBottom: ms(8),
+    marginTop: ms(4),
   },
   feedbackHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: ms(6),
   },
-  aiLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   feedbackText: {
     lineHeight: ms(20),
   },
-  expandButton: {
+  expandToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: ms(6),
-    alignSelf: 'flex-start',
   },
-  footerRow: {
+  pendingBox: {
+    padding: ms(12),
+    borderWidth: 1,
     marginTop: ms(4),
+  },
+  pendingInfoRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+  },
+  evaluateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: ms(10),
+    paddingVertical: ms(7),
   },
 });

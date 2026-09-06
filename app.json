@@ -8,10 +8,17 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.vani.assessmentapp"
+      "bundleIdentifier": "com.vani.assessmentapp",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Allow Vani.Coach to access your microphone for speech coaching assessments."
+      }
     },
     "android": {
       "package": "com.vani.assessmentapp",
+      "permissions": [
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +27,15 @@
       },
       "predictiveBackGestureEnabled": false
     },
+    "plugins": [
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Vani.Coach to access your microphone for speech coaching assessments.",
+          "recordAudioAndroid": true
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     }

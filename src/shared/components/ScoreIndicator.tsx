@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { useTheme } from '../theme';
-import { AppText } from './AppText';
-import { ms } from '../utils/scale';
+import { useTheme } from '@/shared/theme';
+import { ms } from '@/shared/utils';
+import { AppText } from '@/shared/components/AppText';
 
 interface ScoreIndicatorProps {
   score: number | null;

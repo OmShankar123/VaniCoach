@@ -1,47 +1,41 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../../shared/theme';
-import { AppText } from '../../../shared/components/AppText';
-import { ms } from '../../../shared/utils/scale';
+import { AppText, useTheme, ms } from '@/shared';
 
 interface EmptyStateProps {
-  onReset: () => void;
+  onAction: () => void;
   isPendingMode?: boolean;
+  onLoadPdfData?: () => void;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ onReset, isPendingMode }) => {
-  const { colors, spacing, radius } = useTheme();
+export const EmptyState: React.FC<EmptyStateProps> = ({
+  onAction,
+  isPendingMode = false,
+  onLoadPdfData,
+}) => {
+  const { colors, radius } = useTheme();
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: colors.surface,
-          borderColor: colors.cardBorder,
-          borderRadius: radius.xl,
-          padding: spacing.xxl,
-        },
-      ]}
-    >
+    <View style={styles.container}>
       <View
         style={[
           styles.iconCircle,
           {
-            backgroundColor: colors.primaryLight,
+            backgroundColor: colors.surfaceElevated,
+            borderColor: colors.cardBorder,
           },
         ]}
       >
         <Ionicons
-          name={isPendingMode ? 'hourglass-outline' : 'school-outline'}
-          size={ms(42)}
-          color={colors.primary}
+          name={isPendingMode ? 'time-outline' : 'sparkles-outline'}
+          size={ms(32)}
+          color={isPendingMode ? colors.pending : colors.primary}
         />
       </View>
 
       <AppText variant="h2" align="center" style={styles.title}>
-        {isPendingMode ? 'No Pending Assessments' : 'No Completed Assessments'}
+        {isPendingMode ? 'No Pending Submissions' : 'No Completed Assessments'}
       </AppText>
 
       <AppText
@@ -51,26 +45,33 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onReset, isPendingMode }
         style={styles.description}
       >
         {isPendingMode
-          ? 'All your submitted questions have been evaluated by our AI coach.'
-          : "You haven't completed any assessments yet. Submit a voice or text response to receive instant AI-powered scoring and personalized coaching feedback."}
+          ? 'All your practice attempts have been evaluated by Vani AI Coach.'
+          : 'Complete a voice or text practice session to view your coaching score and personalized AI feedback.'}
       </AppText>
 
-      <TouchableOpacity
-        onPress={onReset}
-        activeOpacity={0.8}
-        style={[
-          styles.button,
-          {
-            backgroundColor: colors.primary,
-            borderRadius: radius.md,
-          },
-        ]}
-      >
-        <Ionicons name="refresh-outline" size={ms(16)} color={colors.textInverse} style={styles.buttonIcon} />
-        <AppText variant="bodyBold" color={colors.textInverse}>
-          Load Sample Assessments
-        </AppText>
-      </TouchableOpacity>
+      {onLoadPdfData && (
+        <TouchableOpacity
+          onPress={onLoadPdfData}
+          style={[
+            styles.ctaButton,
+            {
+              backgroundColor: colors.primary,
+              borderRadius: radius.md,
+            },
+          ]}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="document-attach-outline"
+            size={ms(18)}
+            color="#FFFFFF"
+            style={{ marginRight: ms(8) }}
+          />
+          <AppText variant="body" weight="700" color="#FFFFFF">
+            Load PDF Example Data
+          </AppText>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -78,33 +79,29 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onReset, isPendingMode }
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    marginTop: ms(20),
-    marginHorizontal: ms(4),
+    paddingVertical: ms(40),
+    paddingHorizontal: ms(24),
   },
   iconCircle: {
-    width: ms(80),
-    height: ms(80),
-    borderRadius: ms(40),
-    alignItems: 'center',
+    width: ms(72),
+    height: ms(72),
+    borderRadius: ms(36),
+    borderWidth: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: ms(16),
   },
   title: {
     marginBottom: ms(8),
   },
   description: {
-    lineHeight: ms(22),
     marginBottom: ms(20),
+    maxWidth: ms(280),
   },
-  button: {
+  ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: ms(10),
-    paddingHorizontal: ms(18),
-  },
-  buttonIcon: {
-    marginRight: ms(6),
+    paddingHorizontal: ms(20),
+    paddingVertical: ms(12),
   },
 });

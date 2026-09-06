@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, TextProps, TextStyle } from 'react-native';
-import { useTheme } from '../theme';
+import { useTheme } from '@/shared/theme';
 
 export interface AppTextProps extends TextProps {
   variant?: 'h1' | 'h2' | 'h3' | 'subtitle' | 'body' | 'bodyBold' | 'caption' | 'captionMuted' | 'tag' | 'scoreBig';

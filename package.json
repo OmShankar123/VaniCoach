@@ -5,23 +5,53 @@
   "dependencies": {
     "@expo/metro-runtime": "~57.0.15",
     "@expo/vector-icons": "^15.0.2",
+    "@react-navigation/bottom-tabs": "^7.18.18",
+    "@react-navigation/native": "^7.3.18",
+    "@shopify/flash-list": "2.0.2",
+    "@tanstack/react-query": "^5.102.8",
     "expo": "~57.0.20",
+    "expo-asset": "~57.0.16",
+    "expo-audio": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-keyboard-aware-scroll-view": "^0.9.5",
+    "react-native-mmkv": "^4.3.2",
+    "react-native-nitro-modules": "^0.37.1",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-web": "^0.21.2"
+    "react-native-screens": "~4.26.0",
+    "react-native-web": "^0.21.2",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
+    "babel-plugin-module-resolver": "^5.0.3",
+    "typescript": "^7.0.2"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "env:dev": "node scripts/set-env.js development",
+    "env:staging": "node scripts/set-env.js staging",
+    "env:prod": "node scripts/set-env.js production",
+    "start:dev": "yarn env:dev && expo start -c",
+    "start:staging": "yarn env:staging && expo start -c",
+    "start:prod": "yarn env:prod && expo start -c",
+    "android:dev": "yarn env:dev && expo run:android",
+    "android:prod": "yarn env:prod && expo run:android",
+    "ios:dev": "yarn env:dev && expo run:ios",
+    "ios:prod": "yarn env:prod && expo run:ios",
+    "build:android:debug": "cd android && ./gradlew assembleDebug",
+    "build:android:release": "yarn env:prod && cd android && ./gradlew assembleRelease",
+    "build:android:bundle": "yarn env:prod && cd android && ./gradlew bundleRelease",
+    "build:apk": "yarn build:android:release",
+    "clean:android": "cd android && ./gradlew clean",
+    "clean": "cd android && ./gradlew clean && cd .. && rm -rf $TMPDIR/metro-* $TMPDIR/haste-map-*",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
   },
   "private": true
 }

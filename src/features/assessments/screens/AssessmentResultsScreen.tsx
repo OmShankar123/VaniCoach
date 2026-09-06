@@ -1,90 +1,198 @@
-import React, { useCallback } from 'react';
-import {
-  View,
-  FlatList,
-  StyleSheet,
-  RefreshControl,
-  ListRenderItem,
-  Platform,
-} from 'react-native';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { View, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../../shared/theme';
-import { Header } from '../../../shared/components/Header';
-import { AssessmentCard } from '../components/AssessmentCard';
-import { AssessmentStats } from '../components/AssessmentStats';
-import { AssessmentFilter } from '../components/AssessmentFilter';
-import { EmptyState } from '../components/EmptyState';
-import { useAssessments } from '../hooks/useAssessments';
-import { AssessmentResult } from '../types/assessment';
-import { ms } from '../../../shared/utils/scale';
+import { FlashList, ListRenderItem } from '@shopify/flash-list';
+import { Header, AppText, useTheme, ms } from '@/shared';
+import {
+  AssessmentCard,
+  AssessmentStats,
+  AssessmentFilter,
+  EmptyState,
+} from '@/features/assessments/components';
+import { useAssessmentStore } from '@/features/assessments/store';
+import type { AssessmentResult, AssessmentStatsSummary } from '@/features/assessments/types';
+
+const PAGE_SIZE = 20;
 
 export const AssessmentResultsScreen: React.FC = () => {
   const { colors, spacing } = useTheme();
 
-  const {
-    assessments,
-    stats,
-    filterType,
-    setFilterType,
-    showPending,
-    setShowPending,
-    isRefreshing,
-    onRefresh,
-    clearAllCompleted,
-    resetData,
-    loadStressTestData,
-  } = useAssessments();
+  const rawAssessments = useAssessmentStore((s) => s.assessments);
+  const filterType = useAssessmentStore((s) => s.filterType);
+  const performanceFilter = useAssessmentStore((s) => s.performanceFilter);
+  const searchQuery = useAssessmentStore((s) => s.searchQuery);
+  const showPending = useAssessmentStore((s) => s.showPending);
+  const isRefreshing = useAssessmentStore((s) => s.isRefreshing);
 
-  // Performance Optimization: Memoized keyExtractor
-  const keyExtractor = useCallback((item: AssessmentResult) => item.id, []);
+  const setFilterType = useAssessmentStore((s) => s.setFilterType);
+  const setPerformanceFilter = useAssessmentStore((s) => s.setPerformanceFilter);
+  const setSearchQuery = useAssessmentStore((s) => s.setSearchQuery);
+  const setShowPending = useAssessmentStore((s) => s.setShowPending);
+  const triggerRefresh = useAssessmentStore((s) => s.triggerRefresh);
+  const clearAllCompleted = useAssessmentStore((s) => s.clearAllCompleted);
+  const loadPdfExampleData = useAssessmentStore((s) => s.loadPdfExampleData);
+  const generateStressTestData = useAssessmentStore((s) => s.generateStressTestData);
+  const evaluatePendingAssessment = useAssessmentStore((s) => s.evaluatePendingAssessment);
 
-  // Performance Optimization: Memoized renderItem
-  const renderItem: ListRenderItem<AssessmentResult> = useCallback(
-    ({ item }) => <AssessmentCard item={item} />,
-    []
+  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
+
+  const { filteredList, stats } = useMemo(() => {
+    let completedCount = 0;
+    let pendingCount = 0;
+    let sumScore = 0;
+    let goodCount = 0;
+    let needsImprovementCount = 0;
+
+    const query = searchQuery.trim().toLowerCase();
+    const resultList: AssessmentResult[] = [];
+
+    for (let i = 0; i < rawAssessments.length; i++) {
+      const item = rawAssessments[i];
+
+      if (item.status === 'Completed') {
+        completedCount++;
+        if (item.score !== null) {
+          sumScore += item.score;
+          if (item.score >= 70) goodCount++;
+          else needsImprovementCount++;
+        }
+      } else {
+        pendingCount++;
+      }
+
+      if (!showPending && item.status === 'Pending') continue;
+      if (showPending && item.status !== 'Pending') continue;
+      if (filterType !== 'All' && item.assessmentType !== filterType) continue;
+
+      if (performanceFilter !== 'All') {
+        if (item.status === 'Pending') continue;
+        const isGood = (item.score ?? 0) >= 70;
+        if (performanceFilter === 'Good' && !isGood) continue;
+        if (performanceFilter === 'Needs Improvement' && isGood) continue;
+      }
+
+      if (query.length > 0) {
+        const matchQ = item.question.toLowerCase().includes(query);
+        const matchF = item.feedback?.toLowerCase().includes(query);
+        if (!matchQ && !matchF) continue;
+      }
+
+      resultList.push(item);
+    }
+
+    const summary: AssessmentStatsSummary = {
+      totalAttempted: completedCount + pendingCount,
+      completedCount,
+      pendingCount,
+      averageScore: completedCount > 0 ? Math.round(sumScore / completedCount) : 0,
+      goodCount,
+      needsImprovementCount,
+    };
+
+    return {
+      filteredList: resultList,
+      stats: summary,
+    };
+  }, [rawAssessments, filterType, performanceFilter, searchQuery, showPending]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, filterType, performanceFilter, showPending]);
+
+  const pagedList = useMemo(() => {
+    if (visibleCount >= filteredList.length) return filteredList;
+    return filteredList.slice(0, visibleCount);
+  }, [filteredList, visibleCount]);
+
+  const handleEndReached = useCallback(() => {
+    if (visibleCount < filteredList.length) {
+      setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredList.length));
+    }
+  }, [visibleCount, filteredList.length]);
+
+  const handleEvaluate = useCallback(
+    (id: string) => {
+      evaluatePendingAssessment(id);
+    },
+    [evaluatePendingAssessment]
   );
 
-  // Memoized Header component containing Stats and Filter Controls
-  const renderListHeader = useCallback(() => {
-    return (
-      <View style={styles.headerContainer}>
-        {/* Summary Metric Cards */}
-        {!showPending && <AssessmentStats stats={stats} />}
+  const renderItem: ListRenderItem<AssessmentResult> = useCallback(
+    ({ item }) => <AssessmentCard item={item} onEvaluate={handleEvaluate} />,
+    [handleEvaluate]
+  );
 
-        {/* Filter Tabs & Test Actions */}
+  const keyExtractor = useCallback((item: AssessmentResult) => item.id, []);
+
+  const ListHeader = useMemo(
+    () => (
+      <View style={styles.headerBlock}>
+        {!showPending && <AssessmentStats stats={stats} />}
         <AssessmentFilter
           currentFilter={filterType}
           onSelectFilter={setFilterType}
+          performanceFilter={performanceFilter}
+          onSelectPerformanceFilter={setPerformanceFilter}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           showPending={showPending}
-          onTogglePending={() => setShowPending((prev) => !prev)}
+          onTogglePending={setShowPending}
+          completedCount={stats.completedCount}
+          pendingCount={stats.pendingCount}
+          onLoadPdfData={loadPdfExampleData}
+          onStressTest={() => generateStressTestData(50)}
           onClearCompleted={clearAllCompleted}
-          onResetData={resetData}
-          onStressTest={loadStressTestData}
         />
+        <View style={styles.resultsMetaBar}>
+          <AppText variant="captionMuted">
+            Showing {pagedList.length} of {filteredList.length} assessments
+          </AppText>
+          {rawAssessments.length >= 100 && (
+            <View style={[styles.largeDataBadge, { backgroundColor: colors.surfaceElevated }]}>
+              <AppText variant="caption" color={colors.primary} style={styles.badgeText}>
+                ⚡ {rawAssessments.length} Total Loaded
+              </AppText>
+            </View>
+          )}
+        </View>
       </View>
-    );
-  }, [
-    showPending,
-    stats,
-    filterType,
-    setFilterType,
-    setShowPending,
-    clearAllCompleted,
-    resetData,
-    loadStressTestData,
-  ]);
+    ),
+    [
+      showPending,
+      stats,
+      filterType,
+      performanceFilter,
+      searchQuery,
+      pagedList.length,
+      filteredList.length,
+      rawAssessments.length,
+      colors,
+      setFilterType,
+      setPerformanceFilter,
+      setSearchQuery,
+      setShowPending,
+      loadPdfExampleData,
+      generateStressTestData,
+      clearAllCompleted,
+    ]
+  );
 
-  // Memoized Empty Component
-  const renderEmptyComponent = useCallback(() => {
-    return <EmptyState onReset={resetData} isPendingMode={showPending} />;
-  }, [resetData, showPending]);
+  const ListEmpty = useMemo(
+    () => (
+      <EmptyState
+        onAction={loadPdfExampleData}
+        isPendingMode={showPending}
+        onLoadPdfData={loadPdfExampleData}
+      />
+    ),
+    [loadPdfExampleData, showPending]
+  );
 
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: colors.background }]}
       edges={['top', 'left', 'right']}
     >
-      {/* Fixed Screen Header */}
       <Header
         title="Assessment Results"
         subtitle={
@@ -94,36 +202,40 @@ export const AssessmentResultsScreen: React.FC = () => {
         }
       />
 
-      {/* Optimized Virtualized FlatList */}
-      <FlatList
-        data={assessments}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        ListHeaderComponent={renderListHeader}
-        ListEmptyComponent={renderEmptyComponent}
-        contentContainerStyle={[
-          styles.listContent,
-          {
-            paddingHorizontal: spacing.base,
-            paddingBottom: spacing.xxxl,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}
-        // FlatList Performance tuning for large data sets
-        initialNumToRender={6}
-        maxToRenderPerBatch={8}
-        windowSize={5}
-        removeClippedSubviews={Platform.OS !== 'web'}
-        updateCellsBatchingPeriod={50}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-      />
+      <View style={styles.listContainer}>
+        <FlashList
+          data={pagedList}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={ListEmpty}
+          contentContainerStyle={[
+            styles.contentContainer,
+            { paddingBottom: spacing.xxxl },
+          ]}
+          showsVerticalScrollIndicator={false}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={triggerRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+          ListFooterComponent={
+            visibleCount < filteredList.length ? (
+              <View style={styles.loadingFooter}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <AppText variant="captionMuted" style={{ marginLeft: ms(8) }}>
+                  Loading more assessments...
+                </AppText>
+              </View>
+            ) : null
+          }
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -132,10 +244,37 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  headerContainer: {
-    marginTop: ms(8),
+  listContainer: {
+    flex: 1,
   },
-  listContent: {
-    flexGrow: 1,
+  contentContainer: {
+    paddingHorizontal: ms(16),
+  },
+  headerBlock: {
+    marginTop: ms(8),
+    marginBottom: ms(8),
+  },
+  resultsMetaBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: ms(4),
+    marginTop: ms(10),
+    marginBottom: ms(4),
+  },
+  largeDataBadge: {
+    paddingHorizontal: ms(8),
+    paddingVertical: ms(2),
+    borderRadius: ms(12),
+  },
+  badgeText: {
+    fontSize: ms(11),
+    fontWeight: '700',
+  },
+  loadingFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: ms(16),
   },
 });

@@ -1,4 +1,4 @@
-import { AssessmentResult } from '../types/assessment';
+import { AssessmentResult } from '@/features/assessments/types';
 
 export const INITIAL_ASSESSMENTS: AssessmentResult[] = [
   // 4 Questions from PDF Example Scenario

@@ -1,9 +1,6 @@
 import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
-import { colors, ThemeColors } from './colors';
-import { spacing, radius } from './spacing';
-import { typography } from './typography';
-import { getShadows } from './shadows';
+import { colors, ThemeColors, spacing, radius, typography, getShadows } from '@/shared/theme';
 
 type ThemeMode = 'light' | 'dark';
 

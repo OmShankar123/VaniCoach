@@ -1,4 +1,4 @@
-import { ms } from '../utils/scale';
+import { ms } from '@/shared/utils';
 
 export const spacing = {
   none: 0,

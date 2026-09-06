@@ -1,8 +1,10 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ThemeProvider, useTheme } from './src/shared/theme';
-import { AssessmentResultsScreen } from './src/features/assessments/screens/AssessmentResultsScreen';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/core/api';
+import { ThemeProvider, useTheme } from '@/shared/theme';
+import { AppNavigator } from '@/navigation';
 
 function AppContent() {
   const { isDark } = useTheme();
@@ -10,17 +12,19 @@ function AppContent() {
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <AssessmentResultsScreen />
+      <AppNavigator />
     </>
   );
 }
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AppContent />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </QueryClientProvider>
   );
 }

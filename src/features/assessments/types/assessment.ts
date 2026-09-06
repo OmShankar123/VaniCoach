@@ -11,9 +11,11 @@ export interface AssessmentResult {
   feedback: string | null;
   submittedAt?: string;
   duration?: string; // e.g. "1m 45s" for recorded or "180 words" for text
+  audioUri?: string;
 }
 
 export type AssessmentFilterType = 'All' | 'Recorded' | 'Text';
+export type PerformanceFilterType = 'All' | 'Good' | 'Needs Improvement';
 export type AssessmentStatusFilter = 'All' | 'Completed' | 'Pending';
 
 export interface AssessmentStatsSummary {

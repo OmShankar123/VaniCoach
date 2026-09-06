@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../theme';
-import { AppText } from './AppText';
-import { ms } from '../utils/scale';
+import { useTheme } from '@/shared/theme';
+import { ms } from '@/shared/utils';
+import { AppText } from '@/shared/components/AppText';
 
 interface HeaderProps {
   title: string;
@@ -36,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
               ]}
             >
               <Image
-                source={require('../../../assets/vani-logo.png')}
+                source={require('@/assets/images/vani-logo.png')}
                 style={styles.logoImage}
                 resizeMode="contain"
                 accessibilityLabel="Vani Coach Logo"

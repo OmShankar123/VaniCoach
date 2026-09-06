@@ -1,5 +1,5 @@
 import { TextStyle } from 'react-native';
-import { ms } from '../utils/scale';
+import { ms } from '@/shared/utils';
 
 export const typography: Record<string, TextStyle> = {
   h1: {
