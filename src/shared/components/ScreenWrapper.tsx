@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode } from "react";
 import {
   View,
   ScrollView,
@@ -7,10 +7,9 @@ import {
   StyleProp,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { SafeAreaView, Edge } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useTheme } from '@/shared/theme';
+} from "react-native";
+import { useSafeAreaInsets, Edge } from "react-native-safe-area-context";
+import { useTheme } from "@/shared/theme";
 
 export interface ScreenWrapperProps {
   children: ReactNode;
@@ -32,16 +31,17 @@ export interface ScreenWrapperProps {
  */
 export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
   children,
-  edges = ['top', 'left', 'right'],
+  edges = ["top", "left", "right"],
   scrollable = false,
   style,
   contentContainerStyle,
   header,
   footer,
-  keyboardAvoiding = Platform.OS === 'ios',
+  keyboardAvoiding = Platform.OS === "ios",
   bounces = true,
   showsVerticalScrollIndicator = false,
 }) => {
+  const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
 
   const content = scrollable ? (
@@ -55,12 +55,14 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
       {children}
     </ScrollView>
   ) : (
-    <View style={[styles.staticContent, contentContainerStyle]}>{children}</View>
+    <View style={[styles.staticContent, contentContainerStyle]}>
+      {children}
+    </View>
   );
 
   const wrappedContent = keyboardAvoiding ? (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={styles.keyboardAvoid}
     >
       {content}
@@ -69,16 +71,25 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
     content
   );
 
+  const paddingTop = edges.includes("top") ? insets.top : 0;
+  const paddingBottom = edges.includes("bottom") ? insets.bottom : 0;
+
   return (
-    <SafeAreaView
-      edges={edges}
-      style={[styles.container, { backgroundColor: colors.background }, style]}
+    <View
+      style={[
+        styles.container,
+        {
+          paddingTop,
+          paddingBottom,
+          backgroundColor: colors.background,
+        },
+        style,
+      ]}
     >
-      <StatusBar style={isDark ? 'light' : 'dark'} />
       {header}
       {wrappedContent}
       {footer}
-    </SafeAreaView>
+    </View>
   );
 };
 

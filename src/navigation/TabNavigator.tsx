@@ -37,6 +37,8 @@ export function TabNavigator(): React.JSX.Element {
       screenOptions={{
         headerShown: false,
         animation: 'none',
+        lazy: false,
+        freezeOnBlur: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: [

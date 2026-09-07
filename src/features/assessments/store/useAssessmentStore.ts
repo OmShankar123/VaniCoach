@@ -145,7 +145,7 @@ export const useAssessmentStore = create<AssessmentState>()(
         set({ assessments: [...PDF_EXAMPLE_ASSESSMENTS] });
       },
 
-      appendMockBatch: (count = 4, isPending = false) => {
+      appendMockBatch: (count = 10, isPending = false) => {
         const questions = [
           "How do you communicate a critical release delay to stakeholders?",
           "Explain your technical architecture and design trade-offs",

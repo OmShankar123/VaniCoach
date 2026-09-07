@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlashList, ListRenderItem } from '@shopify/flash-list';
 import { Header, AppText, useTheme, ms } from '@/shared';
 import {
@@ -12,9 +12,10 @@ import {
 import { useAssessmentStore } from '@/features/assessments/store';
 import type { AssessmentResult, AssessmentStatsSummary } from '@/features/assessments/types';
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 20;
 
 export const AssessmentResultsScreen: React.FC = () => {
+  const insets = useSafeAreaInsets();
   const { colors, spacing } = useTheme();
 
   const rawAssessments = useAssessmentStore((s) => s.assessments);
@@ -118,8 +119,8 @@ export const AssessmentResultsScreen: React.FC = () => {
     setIsLoadingMore(true);
 
     setTimeout(() => {
-      appendMockBatch(4, showPending);
-      setVisibleCount((prev) => prev + 4);
+      appendMockBatch(10, showPending);
+      setVisibleCount((prev) => prev + 10);
       setIsLoadingMore(false);
     }, 650);
   }, [visibleCount, filteredList.length, isLoadingMore, appendMockBatch, showPending]);
@@ -203,9 +204,11 @@ export const AssessmentResultsScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
-      edges={['top', 'left', 'right']}
+    <View
+      style={[
+        styles.safeArea,
+        { paddingTop: insets.top, backgroundColor: colors.background },
+      ]}
     >
       <Header
         title="Assessment Results"
@@ -250,7 +253,7 @@ export const AssessmentResultsScreen: React.FC = () => {
           }
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
