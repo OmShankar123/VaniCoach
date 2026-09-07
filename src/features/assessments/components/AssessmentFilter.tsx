@@ -253,7 +253,7 @@ export const AssessmentFilter: React.FC<AssessmentFilterProps> = ({
           <Ionicons name="flash-outline" size={ms(14)} color={colors.textSecondary} />
         </TouchableOpacity>
 
-        {onClearCompleted && completedCount > 0 && (
+        {onClearCompleted && (completedCount > 0 || pendingCount > 0) && (
           <TouchableOpacity
             onPress={onClearCompleted}
             style={[styles.iconActionBtn, { borderColor: colors.cardBorder, backgroundColor: colors.surface }]}

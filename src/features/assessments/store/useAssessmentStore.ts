@@ -89,6 +89,7 @@ interface AssessmentState {
   loadPdfExampleData: () => void;
   generateStressTestData: (count?: number) => void;
   loadMoreDummyData: (count?: number) => void;
+  appendMockBatch: (count?: number, isPending?: boolean) => void;
   evaluatePendingAssessment: (id: string) => void;
 
   // UI actions
@@ -132,9 +133,8 @@ export const useAssessmentStore = create<AssessmentState>()(
       },
 
       clearAllCompleted: () => {
-        set((state) => ({
-          assessments: state.assessments.filter((a) => a.status !== 'Completed'),
-        }));
+        // Deletes all mock data, completed AND pending
+        set({ assessments: [] });
       },
 
       clearAll: () => {
@@ -143,6 +143,54 @@ export const useAssessmentStore = create<AssessmentState>()(
 
       loadPdfExampleData: () => {
         set({ assessments: [...PDF_EXAMPLE_ASSESSMENTS] });
+      },
+
+      appendMockBatch: (count = 4, isPending = false) => {
+        const questions = [
+          "How do you communicate a critical release delay to stakeholders?",
+          "Explain your technical architecture and design trade-offs",
+          "Describe a time you resolved a conflict with a cross-functional peer",
+          "Draft an executive response to an urgent client escalation",
+          "Tell me about a high-impact project you led from inception to launch",
+          "Explain a complex technical concept to a non-technical executive",
+          "Write a constructive performance review summary for a peer",
+          "How do you negotiate scope boundaries during quarterly roadmap planning?",
+          "Deliver an impactful 60-second value pitch for your core product",
+          "How do you mentor an engineer struggling with communication clarity?",
+        ];
+
+        const feedbacks = [
+          "Strong structured delivery following the STAR framework. Clear executive presence and confident vocal pace.",
+          "Identified the core challenge well. Good active listening and courteous, authoritative business tone.",
+          "Clear, concise narrative with great bullet-point hierarchy. Action items are easy for leadership to scan.",
+          "Polite and well-structured. Good empathy demonstrated. Practice reducing hesitation pauses for maximum impact.",
+          "Exceptional clarity on technical trade-offs. Confident inflection and strong business communication etiquette.",
+        ];
+
+        const newItems: AssessmentResult[] = Array.from({ length: count }, (_, i) => {
+          const isRecorded = Math.random() > 0.45;
+          const score = isPending ? null : Math.floor(Math.random() * 26) + 70; // 70-95
+          const qIdx = Math.floor(Math.random() * questions.length);
+          const fIdx = Math.floor(Math.random() * feedbacks.length);
+          const daysAgo = Math.floor(Math.random() * 6) + 2;
+
+          return {
+            id: `stream_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 7)}`,
+            question: questions[qIdx],
+            assessmentType: isRecorded ? "Recorded" : "Text",
+            score,
+            status: isPending ? "Pending" : "Completed",
+            feedback: isPending ? null : feedbacks[fIdx],
+            submittedAt: `${daysAgo}d ago`,
+            duration: isRecorded
+              ? `${Math.floor(Math.random() * 70) + 40}s`
+              : `${Math.floor(Math.random() * 110) + 85} words`,
+          };
+        });
+
+        set((state) => ({
+          assessments: [...state.assessments, ...newItems],
+        }));
       },
 
       evaluatePendingAssessment: (id) => {

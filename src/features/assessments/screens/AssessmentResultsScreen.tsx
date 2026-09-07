@@ -12,7 +12,7 @@ import {
 import { useAssessmentStore } from '@/features/assessments/store';
 import type { AssessmentResult, AssessmentStatsSummary } from '@/features/assessments/types';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 4;
 
 export const AssessmentResultsScreen: React.FC = () => {
   const { colors, spacing } = useTheme();
@@ -33,6 +33,8 @@ export const AssessmentResultsScreen: React.FC = () => {
   const loadPdfExampleData = useAssessmentStore((s) => s.loadPdfExampleData);
   const generateStressTestData = useAssessmentStore((s) => s.generateStressTestData);
   const evaluatePendingAssessment = useAssessmentStore((s) => s.evaluatePendingAssessment);
+  const appendMockBatch = useAssessmentStore((s) => s.appendMockBatch);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
 
   const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
 
@@ -105,10 +107,22 @@ export const AssessmentResultsScreen: React.FC = () => {
   }, [filteredList, visibleCount]);
 
   const handleEndReached = useCallback(() => {
+    // 1. If more items already exist in local store, reveal next chunk
     if (visibleCount < filteredList.length) {
       setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredList.length));
+      return;
     }
-  }, [visibleCount, filteredList.length]);
+
+    // 2. Continuous infinite scroll: simulate realistic API latency and append next batch
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+
+    setTimeout(() => {
+      appendMockBatch(4, showPending);
+      setVisibleCount((prev) => prev + 4);
+      setIsLoadingMore(false);
+    }, 650);
+  }, [visibleCount, filteredList.length, isLoadingMore, appendMockBatch, showPending]);
 
   const handleEvaluate = useCallback(
     (id: string) => {
@@ -225,7 +239,7 @@ export const AssessmentResultsScreen: React.FC = () => {
             />
           }
           ListFooterComponent={
-            visibleCount < filteredList.length ? (
+            isLoadingMore || visibleCount < filteredList.length ? (
               <View style={styles.loadingFooter}>
                 <ActivityIndicator size="small" color={colors.primary} />
                 <AppText variant="captionMuted" style={{ marginLeft: ms(8) }}>
